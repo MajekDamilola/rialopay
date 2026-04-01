@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>RialoPay — Private Freelancer Payments</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #080b10;
+    --surface: #0e1420;
+    --surface2: #131a27;
+    --border: #1e2d42;
+    --accent: #00e5ff;
+    --accent2: #7b61ff;
+    --green: #00ffb2;
+    --red: #ff4d6d;
+    --text: #e8f0fe;
+    --muted: #5a7a9a;
+    --font: 'Syne', sans-serif;
+    --mono: 'DM Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background glow */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -200px; left: 50%;
+    transform: translateX(-50%);
+    width: 800px; height: 600px;
+    background: radial-gradient(ellipse, rgba(0,229,255,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* NAV */
+  nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 40px;
+    border-bottom: 1px solid var(--border);
+    position: relative; z-index: 10;
+    background: rgba(8,11,16,0.8);
+    backdrop-filter: blur(12px);
+  }
+
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 1.3rem; font-weight: 800; letter-spacing: -0.5px;
+  }
+  .logo-dot {
+    width: 10px; height: 10px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--accent);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  .nav-badge {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    background: rgba(0,229,255,0.1);
+    border: 1px solid rgba(0,229,255,0.3);
+    color: var(--accent);
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 1px;
+  }
+
+  .nav-right {
+    display: flex; align-items: center; gap: 16px;
+  }
+
+  .wallet-btn {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .wallet-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .wallet-dot { width: 7px; height: 7px; background: var(--green); border-radius: 50%; box-shadow: 0 0 6px var(--green); }
+
+  /* HERO */
+  .hero {
+    text-align: center;
+    padding: 70px 20px 40px;
+    position: relative; z-index: 1;
+  }
+  .hero-tag {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--accent);
+    background: rgba(0,229,255,0.08);
+    border: 1px solid rgba(0,229,255,0.2);
+    padding: 6px 14px; border-radius: 20px;
+    margin-bottom: 24px;
+    letter-spacing: 1px;
+  }
+  .hero h1 {
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -1px;
+    margin-bottom: 16px;
+  }
+  .hero h1 span { color: var(--accent); }
+  .hero p {
+    color: var(--muted);
+    font-size: 1rem;
+    max-width: 500px;
+    margin: 0 auto 10px;
+    line-height: 1.6;
+    font-family: var(--mono);
+    font-weight: 300;
+  }
+
+  /* STATS ROW */
+  .stats-row {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin: 30px auto;
+    flex-wrap: wrap;
+    position: relative; z-index: 1;
+  }
+  .stat {
+    text-align: center;
+  }
+  .stat-val {
+    font-size: 1.4rem; font-weight: 800;
+    color: var(--accent);
+  }
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--muted);
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  /* MAIN LAYOUT */
+  .main {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 20px 60px;
+    position: relative; z-index: 1;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  @media (max-width: 700px) {
+    .grid { grid-template-columns: 1fr; }
+    nav { padding: 16px 20px; }
+    .stats-row { gap: 24px; }
+  }
+
+  /* CARD */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0,229,255,0.4), transparent);
+  }
+  .card-title {
+    font-size: 0.72rem;
+    font-family: var(--mono);
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-title-icon {
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+  }
+
+  /* FORM */
+  .form-group { margin-bottom: 18px; }
+  label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+  }
+  input, select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.9rem;
+    padding: 12px 14px;
+    border-radius: 10px;
+    outline: none;
+    transition: border-color 0.2s;
+    appearance: none;
+  }
+  input:focus, select:focus { border-color: var(--accent); }
+  input::placeholder { color: var(--muted); }
+
+  .amount-wrap {
+    position: relative;
+  }
+  .amount-wrap input {
+    padding-left: 40px;
+    font-size: 1.3rem;
+    font-weight: 600;
+    padding-top: 14px; padding-bottom: 14px;
+  }
+  .amount-symbol {
+    position: absolute;
+    left: 14px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 1rem;
+  }
+
+  .privacy-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .privacy-toggle:hover { border-color: var(--accent2); }
+  .privacy-left { display: flex; align-items: center; gap: 10px; }
+  .privacy-left span { font-size: 0.85rem; }
+  .privacy-label { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); }
+
+  .toggle-switch {
+    width: 40px; height: 22px;
+    background: var(--accent2);
+    border-radius: 11px;
+    position: relative;
+    transition: background 0.2s;
+  }
+  .toggle-switch::after {
+    content: '';
+    position: absolute;
+    width: 16px; height: 16px;
+    background: white;
+    border-radius: 50%;
+    top: 3px; right: 3px;
+    transition: transform 0.2s;
+  }
+
+  /* SEND BUTTON */
+  .send-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    border: none;
+    border-radius: 12px;
+    color: #000;
+    font-family: var(--font);
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+    margin-top: 8px;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+  .send-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(123,97,255,0.4);
+  }
+  .send-btn:active { transform: translateY(0); }
+
+  /* FEE INFO */
+  .fee-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 0.8rem;
+  }
+  .fee-row:last-child { border-bottom: none; }
+  .fee-label { color: var(--muted); }
+  .fee-val { color: var(--text); }
+  .fee-val.green { color: var(--green); }
+  .fee-val.accent { color: var(--accent); }
+
+  /* HISTORY */
+  .tx-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .tx-item:last-child { border-bottom: none; }
+  .tx-icon {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .tx-icon.sent { background: rgba(255,77,109,0.1); border: 1px solid rgba(255,77,109,0.2); }
+  .tx-icon.recv { background: rgba(0,255,178,0.1); border: 1px solid rgba(0,255,178,0.2); }
+  .tx-info { flex: 1; }
+  .tx-name { font-size: 0.88rem; font-weight: 600; margin-bottom: 2px; }
+  .tx-meta { font-family: var(--mono); font-size: 0.7rem; color: var(--muted); display: flex; gap: 8px; align-items: center; }
+  .tx-private { background: rgba(123,97,255,0.15); border: 1px solid rgba(123,97,255,0.3); color: var(--accent2); padding: 1px 7px; border-radius: 4px; font-size: 0.65rem; }
+  .tx-amount { font-family: var(--mono); font-weight: 500; text-align: right; }
+  .tx-amount.sent { color: var(--red); }
+  .tx-amount.recv { color: var(--green); }
+  .tx-time { font-size: 0.65rem; color: var(--muted); margin-top: 2px; }
+
+  /* SUCCESS OVERLAY */
+  .overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(8,11,16,0.92);
+    z-index: 100;
+    align-items: center; justify-content: center;
+    backdrop-filter: blur(8px);
+  }
+  .overlay.show { display: flex; }
+  .success-card {
+    background: var(--surface);
+    border: 1px solid rgba(0,255,178,0.3);
+    border-radius: 20px;
+    padding: 48px 40px;
+    text-align: center;
+    max-width: 360px;
+    width: 90%;
+    animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes popIn {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .success-icon {
+    font-size: 3rem; margin-bottom: 16px;
+  }
+  .success-card h2 { font-size: 1.5rem; margin-bottom: 8px; }
+  .success-card p { color: var(--muted); font-family: var(--mono); font-size: 0.8rem; line-height: 1.6; }
+  .tx-hash {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--accent);
+    margin: 16px 0;
+    word-break: break-all;
+  }
+  .close-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 0.9rem;
+    padding: 12px 28px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .close-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* POWERED BY */
+  .powered {
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 40px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .powered a { color: var(--accent); text-decoration: none; }
+  .rialo-tag {
+    background: rgba(0,229,255,0.08);
+    border: 1px solid rgba(0,229,255,0.2);
+    color: var(--accent);
+    padding: 2px 8px; border-radius: 4px;
+    font-size: 0.65rem; letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    RialoPay
+  </div>
+  <div class="nav-badge">TESTNET</div>
+  <div class="nav-right">
+    <div class="wallet-btn">
+      <div class="wallet-dot"></div>
+      0x4f2a...c91e
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-tag">⚡ Powered by Rialo Network</div>
+  <h1>Send Money<br/><span>Privately. Instantly.</span></h1>
+  <p>Pay freelancers anywhere in the world — no bank, no middleman, no one sees your amount.</p>
+</div>
+
+<!-- STATS -->
+<div class="stats-row">
+  <div class="stat">
+    <div class="stat-val">~0.05s</div>
+    <div class="stat-label">FINALITY</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val">$0.000</div>
+    <div class="stat-label">GAS FEE</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val">100%</div>
+    <div class="stat-label">PRIVATE</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val">180+</div>
+    <div class="stat-label">COUNTRIES</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="grid">
+
+    <!-- SEND FORM -->
+    <div class="card">
+      <div class="card-title"><div class="card-title-icon"></div> NEW PAYMENT</div>
+
+      <div class="form-group">
+        <label>RECIPIENT WALLET</label>
+        <input type="text" id="recipient" placeholder="0x... or rialo.wallet" />
+      </div>
+
+      <div class="form-group">
+        <label>AMOUNT</label>
+        <div class="amount-wrap">
+          <span class="amount-symbol">$</span>
+          <input type="number" id="amount" placeholder="0.00" min="0" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>CURRENCY</label>
+        <select id="currency">
+          <option value="USDC">USDC — USD Coin</option>
+          <option value="USDT">USDT — Tether</option>
+          <option value="ETH">ETH — Ethereum</option>
+          <option value="RIALO">RIALO — Native Token</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>NOTE (ENCRYPTED)</label>
+        <input type="text" id="note" placeholder="e.g. Design invoice #004" />
+      </div>
+
+      <div class="form-group">
+        <label>PRIVACY</label>
+        <div class="privacy-toggle">
+          <div class="privacy-left">
+            <span>🔒</span>
+            <div>
+              <div style="font-size:0.85rem; font-weight:600;">Confidential Transfer</div>
+              <div class="privacy-label">Amount hidden on-chain via Rialo IPC</div>
+            </div>
+          </div>
+          <div class="toggle-switch"></div>
+        </div>
+      </div>
+
+      <!-- FEE BREAKDOWN -->
+      <div style="margin-bottom:18px;">
+        <div class="fee-row">
+          <span class="fee-label">Network fee</span>
+          <span class="fee-val green">FREE (Rialo Cruise)</span>
+        </div>
+        <div class="fee-row">
+          <span class="fee-label">Finality time</span>
+          <span class="fee-val accent">~50ms</span>
+        </div>
+        <div class="fee-row">
+          <span class="fee-label">Privacy</span>
+          <span class="fee-val accent">Encrypted ✓</span>
+        </div>
+        <div class="fee-row" id="total-row" style="display:none;">
+          <span class="fee-label">You send</span>
+          <span class="fee-val" id="total-display" style="font-weight:700;"></span>
+        </div>
+      </div>
+
+      <button class="send-btn" onclick="sendPayment()">
+        ⚡ Send Privately
+      </button>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div>
+      <!-- BALANCE CARD -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title"><div class="card-title-icon"></div> YOUR BALANCE</div>
+        <div style="margin-bottom:16px;">
+          <div style="font-family:var(--mono); font-size:0.72rem; color:var(--muted); margin-bottom:4px;">TOTAL (ENCRYPTED)</div>
+          <div style="font-size:2rem; font-weight:800; color:var(--accent);">$12,450.<span style="font-size:1.2rem; color:var(--muted);">00</span></div>
+          <div style="font-family:var(--mono); font-size:0.72rem; color:var(--muted); margin-top:4px;">🔒 Balance hidden from public</div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <div style="background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px;">
+            <div style="font-family:var(--mono); font-size:0.65rem; color:var(--muted);">USDC</div>
+            <div style="font-weight:700; margin-top:2px;">8,200.00</div>
+          </div>
+          <div style="background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px;">
+            <div style="font-family:var(--mono); font-size:0.65rem; color:var(--muted);">USDT</div>
+            <div style="font-weight:700; margin-top:2px;">4,250.00</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RECENT TRANSACTIONS -->
+      <div class="card">
+        <div class="card-title"><div class="card-title-icon"></div> RECENT TRANSACTIONS</div>
+
+        <div class="tx-item">
+          <div class="tx-icon sent">↑</div>
+          <div class="tx-info">
+            <div class="tx-name">Sarah K. — Design Work</div>
+            <div class="tx-meta">0x8f3b...12ac <span class="tx-private">PRIVATE</span></div>
+          </div>
+          <div class="tx-amount sent">
+            -$850.00
+            <div class="tx-time">2 mins ago</div>
+          </div>
+        </div>
+
+        <div class="tx-item">
+          <div class="tx-icon recv">↓</div>
+          <div class="tx-info">
+            <div class="tx-name">Client Payment</div>
+            <div class="tx-meta">0x2d9c...88fa <span class="tx-private">PRIVATE</span></div>
+          </div>
+          <div class="tx-amount recv">
+            +$3,200.00
+            <div class="tx-time">1 hour ago</div>
+          </div>
+        </div>
+
+        <div class="tx-item">
+          <div class="tx-icon sent">↑</div>
+          <div class="tx-info">
+            <div class="tx-name">Dev Invoice #12</div>
+            <div class="tx-meta">0x7a1f...34de <span class="tx-private">PRIVATE</span></div>
+          </div>
+          <div class="tx-amount sent">
+            -$1,500.00
+            <div class="tx-time">Yesterday</div>
+          </div>
+        </div>
+
+        <div class="tx-item">
+          <div class="tx-icon recv">↓</div>
+          <div class="tx-info">
+            <div class="tx-name">Retainer — March</div>
+            <div class="tx-meta">0x5c8e...90ba <span class="tx-private">PRIVATE</span></div>
+          </div>
+          <div class="tx-amount recv">
+            +$2,000.00
+            <div class="tx-time">2 days ago</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="powered">
+    Built on <span class="rialo-tag">RIALO</span> &nbsp;·&nbsp; Confidential transfers via Rialo IPC &nbsp;·&nbsp; Gasless via Rialo Cruise &nbsp;·&nbsp; <a href="https://www.rialo.io" target="_blank">rialo.io ↗</a>
+  </div>
+</div>
+
+<!-- SUCCESS OVERLAY -->
+<div class="overlay" id="overlay">
+  <div class="success-card">
+    <div class="success-icon">✅</div>
+    <h2>Payment Sent!</h2>
+    <p>Your confidential transfer was confirmed on Rialo in <strong style="color:var(--accent);">47ms</strong>. The amount is encrypted — only you and the recipient can see it.</p>
+    <div class="tx-hash" id="tx-hash"></div>
+    <p style="margin-bottom:16px;">No bank. No middleman. No one saw your amount. 🔒</p>
+    <button class="close-btn" onclick="closeOverlay()">Done</button>
+  </div>
+</div>
+
+<script>
+  // Show total when amount typed
+  document.getElementById('amount').addEventListener('input', function() {
+    const amt = parseFloat(this.value);
+    const cur = document.getElementById('currency').value;
+    const row = document.getElementById('total-row');
+    const display = document.getElementById('total-display');
+    if (amt > 0) {
+      row.style.display = 'flex';
+      display.textContent = `${amt.toFixed(2)} ${cur}`;
+      display.style.color = 'var(--accent)';
+    } else {
+      row.style.display = 'none';
+    }
+  });
+
+  function sendPayment() {
+    const recipient = document.getElementById('recipient').value.trim();
+    const amount = document.getElementById('amount').value;
+    const currency = document.getElementById('currency').value;
+
+    if (!recipient || !amount || parseFloat(amount) <= 0) {
+      alert('Please fill in recipient and amount.');
+      return;
+    }
+
+    // Simulate tx hash
+    const chars = '0123456789abcdef';
+    let hash = '0x';
+    for (let i = 0; i < 64; i++) hash += chars[Math.floor(Math.random() * 16)];
+    document.getElementById('tx-hash').textContent = hash;
+
+    document.getElementById('overlay').classList.add('show');
+
+    // Add to history
+    addTx(recipient, parseFloat(amount), currency);
+
+    // Reset form
+    document.getElementById('recipient').value = '';
+    document.getElementById('amount').value = '';
+    document.getElementById('note').value = '';
+    document.getElementById('total-row').style.display = 'none';
+  }
+
+  function addTx(recipient, amount, currency) {
+    const shortAddr = recipient.length > 12 ? recipient.slice(0,6) + '...' + recipient.slice(-4) : recipient;
+    const container = document.querySelector('.card:last-child .tx-item:first-of-type');
+    const newTx = document.createElement('div');
+    newTx.className = 'tx-item';
+    newTx.innerHTML = `
+      <div class="tx-icon sent">↑</div>
+      <div class="tx-info">
+        <div class="tx-name">New Payment</div>
+        <div class="tx-meta">${shortAddr} <span class="tx-private">PRIVATE</span></div>
+      </div>
+      <div class="tx-amount sent">
+        -$${amount.toFixed(2)}
+        <div class="tx-time">Just now</div>
+      </div>`;
+    container.parentNode.insertBefore(newTx, container);
+  }
+
+  function closeOverlay() {
+    document.getElementById('overlay').classList.remove('show');
+  }
+</script>
+</body>
+</html>
