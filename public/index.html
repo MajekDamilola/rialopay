@@ -618,20 +618,44 @@
     document.getElementById('walletPicker').classList.toggle('open');
   }
 
-  function connectMock() {
-    document.getElementById('walletPicker').classList.remove('open');
-    walletConnected = true;
-    const dot = document.getElementById('connectDot');
-    const lbl = document.getElementById('connectLabel');
-    const btn = document.getElementById('connectBtn');
-    dot.classList.add('on');
-    lbl.textContent = '0x4f2a...c91e';
-    btn.classList.add('connected');
-    document.getElementById('walletNotice').style.display = 'none';
-    document.getElementById('balOn').style.display = 'block';
-    document.getElementById('balOff').style.display = 'none';
-    updateBalanceDisplay();
+  async function connectMock() {
+  document.getElementById('walletPicker').classList.remove('open');
+  
+  // Generate a random wallet address for demo
+  const walletAddress = '0x' + [...Array(40)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
+  
+  // Save to session so it persists on refresh
+  sessionStorage.setItem('walletAddress', walletAddress);
+
+  // Call our real API to create/get user from Supabase
+  try {
+    const response = await fetch('/api/wallet', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ wallet_address: walletAddress })
+    });
+    const data = await response.json();
+    
+    if (data.user) {
+      balances.USDC = data.user.balance;
+      balances.USDT = 0;
+    }
+  } catch (err) {
+    console.error('API error:', err);
   }
+
+  walletConnected = true;
+  const dot = document.getElementById('connectDot');
+  const lbl = document.getElementById('connectLabel');
+  const btn = document.getElementById('connectBtn');
+  dot.classList.add('on');
+  lbl.textContent = walletAddress.slice(0, 6) + '...' + walletAddress.slice(-4);
+  btn.classList.add('connected');
+  document.getElementById('walletNotice').style.display = 'none';
+  document.getElementById('balOn').style.display = 'block';
+  document.getElementById('balOff').style.display = 'none';
+  updateBalanceDisplay();
+}
 
   function disconnectWallet() {
     walletConnected = false;
