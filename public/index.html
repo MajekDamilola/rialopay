@@ -815,6 +815,12 @@
         document.getElementById('themeToggle').textContent = '☀️';
       }
 
+      const urlParams = new URLSearchParams(window.location.search);
+      const payAddress = urlParams.get('pay');
+      if (payAddress) {
+        document.getElementById('recipient').value = payAddress;
+      }
+
       document.getElementById('walletNotice').style.display = 'block';
       document.addEventListener('click', (e) => {
         const picker = document.getElementById('walletPicker');
@@ -1122,7 +1128,7 @@
       
       document.getElementById('qrCode').innerHTML = '';
       new QRCode(document.getElementById('qrCode'), {
-        text: address,
+        text: `https://rialopay.vercel.app?pay=${address}`,
         width: 160,
         height: 160,
         colorDark: '#000000',
