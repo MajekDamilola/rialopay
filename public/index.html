@@ -152,6 +152,12 @@
       }
     }
 
+    .nav-wallet-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
     .connect-btn {
       display: flex;
       align-items: center;
@@ -189,6 +195,24 @@
     .connect-dot.on {
       background: var(--mint);
       box-shadow: 0 0 8px var(--mint);
+    }
+
+    .disconnect-btn {
+      background: transparent;
+      border: 1px solid rgba(255,100,100,0.3);
+      color: #ff6b6b;
+      font-family: var(--font);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .disconnect-btn:hover {
+      background: rgba(255,100,100,0.08);
+      border-color: rgba(255,100,100,0.6);
     }
 
     .hero {
@@ -1326,10 +1350,15 @@
       <span class="pill pill-net">TESTNET</span>
       <span class="pill pill-live"><span class="live-dot"></span>LIVE</span>
     </div>
-    <button class="connect-btn" id="connectBtn" onclick="togglePicker()">
-      <div class="connect-dot" id="connectDot"></div>
-      <span id="connectLabel">Connect Wallet</span>
-    </button>
+    <div class="nav-wallet-area" id="navWalletArea">
+      <button class="connect-btn" id="connectBtn" onclick="togglePicker()">
+        <div class="connect-dot" id="connectDot"></div>
+        <span id="connectLabel">Connect Wallet</span>
+      </button>
+      <button class="disconnect-btn" id="disconnectBtn" onclick="disconnectWallet()" style="display:none;">
+        Disconnect
+      </button>
+    </div>
 
     <!-- WALLET PICKER -->
     <div class="wallet-picker" id="walletPicker">
@@ -1489,24 +1518,11 @@
           <div class="card-shine"></div>
           <div class="feed-header">
             <div class="sec-lbl" style="margin-bottom:0;">
-              <div class="sec-dot"></div>LIVE TRANSACTIONS
+              <div class="sec-dot"></div>MY TRANSACTIONS
             </div>
-            <div class="live-ind"><span class="live-dot"></span>GLOBAL FEED</div>
           </div>
           <div id="txFeed">
-            <!-- Global feed loaded via JS -->
-          </div>
-        </div>
-
-        <div class="card" style="margin-top:18px; display:none;" id="userTxCard">
-          <div class="card-shine"></div>
-          <div class="feed-header">
-            <div class="sec-lbl" style="margin-bottom:0;">
-              <div class="sec-dot"></div>YOUR TRANSACTIONS
-            </div>
-          </div>
-          <div id="userTxFeed">
-            <!-- User specific history loaded via JS -->
+            <!-- User transactions will load here -->
           </div>
         </div>
       </div>
@@ -1618,7 +1634,6 @@
 
     window.addEventListener('load', () => {
       document.getElementById('walletNotice').style.display = 'block';
-      loadGlobalFeed();
       document.addEventListener('click', (e) => {
         const picker = document.getElementById('walletPicker');
         const btn = document.getElementById('connectBtn');
@@ -1629,7 +1644,7 @@
     });
 
     function togglePicker() {
-      if (walletConnected) { disconnectWallet(); return; }
+      if (walletConnected) return;
       document.getElementById('walletPicker').classList.toggle('open');
     }
 
@@ -1645,6 +1660,11 @@
       try {
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         const walletAddress = accounts[0];
+
+        await window.ethereum.request({
+          method: 'personal_sign',
+          params: ['Welcome to RialoPay. Sign to verify your wallet ownership.', walletAddress]
+        });
 
         // Hit /api/wallet to ensure user exists
         const response = await fetch('/api/wallet', {
@@ -1675,13 +1695,14 @@
         document.getElementById('walletNotice').style.display = 'none';
         document.getElementById('balOn').style.display = 'block';
         document.getElementById('balOff').style.display = 'none';
+        document.getElementById('disconnectBtn').style.display = 'block';
         
         updateBalanceDisplay();
         loadUserTxs(walletAddress);
 
       } catch (err) {
         console.error('MetaMask error:', err);
-        alert('Failed to connect. Please try again.');
+        alert('Failed to connect or user rejected signature.');
       }
     }
 
@@ -1698,7 +1719,8 @@
       document.getElementById('walletNotice').style.display = 'block';
       document.getElementById('balOn').style.display = 'none';
       document.getElementById('balOff').style.display = 'block';
-      document.getElementById('userTxCard').style.display = 'none';
+      document.getElementById('disconnectBtn').style.display = 'none';
+      document.getElementById('txFeed').innerHTML = '';
     }
 
     function updateBalanceDisplay() {
@@ -1845,39 +1867,7 @@
       } catch (e) { console.error(e); }
 
       // Refresh both feeds seamlessly
-      loadGlobalFeed();
       loadUserTxs(window._walletAddress);
-    }
-
-    async function loadGlobalFeed() {
-      try {
-        const res = await fetch('/api/transaction?wallet=global');
-        const data = await res.json();
-        const feed = document.getElementById('txFeed');
-        feed.innerHTML = '';
-        if (data.transactions && data.transactions.length > 0) {
-          data.transactions.forEach(tx => {
-            const shortSender = tx.sender.length > 10 ? tx.sender.slice(0, 6) + '...' + tx.sender.slice(-4) : tx.sender;
-            const el = document.createElement('div');
-            el.className = 'tx';
-            el.innerHTML = `
-              <div class="tx-ico out">↑</div>
-              <div class="tx-body">
-                <div class="tx-name">${tx.note || 'Payment'}</div>
-                <div class="tx-meta"><span class="tx-addr">${shortSender}</span><span class="tx-badge b-priv">PRIVATE</span><span class="tx-badge b-inst">INSTANT</span></div>
-              </div>
-              <div class="tx-right">
-                <div class="tx-amt out">$${parseFloat(tx.amount).toFixed(2)}</div>
-                <div class="tx-time">${timeAgo(Date.parse(tx.created_at))}</div>
-              </div>`;
-            feed.appendChild(el);
-          });
-        } else {
-          feed.innerHTML = '<p style="color: var(--muted); font-size: 0.85rem; padding: 10px 0;">No transactions yet.</p>';
-        }
-      } catch (e) {
-        console.error("Error loading global feed", e);
-      }
     }
 
     async function loadUserTxs(walletAddress) {
@@ -1885,7 +1875,7 @@
       try {
         const res = await fetch(`/api/transaction?wallet=${walletAddress}`);
         const data = await res.json();
-        const feed = document.getElementById('userTxFeed');
+        const feed = document.getElementById('txFeed');
         feed.innerHTML = '';
         if (data.transactions && data.transactions.length > 0) {
           data.transactions.forEach(tx => {
@@ -1907,10 +1897,8 @@
               </div>`;
             feed.appendChild(el);
           });
-          document.getElementById('userTxCard').style.display = 'block';
         } else {
           feed.innerHTML = '<p style="color: var(--muted); font-size: 0.85rem; padding: 10px 0;">No transactions yet.</p>';
-          document.getElementById('userTxCard').style.display = 'block';
         }
       } catch (e) {
         console.error("Error loading user txs", e);
