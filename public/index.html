@@ -33,6 +33,25 @@
       --mono: 'JetBrains Mono', monospace;
     }
 
+    body.light-mode {
+      --bg: #f5f4f0;
+      --surface: #ffffff;
+      --surface2: #f0efeb;
+      --surface3: #e8e6e1;
+      --border: #e0ddd6;
+      --border2: #d6d2c9;
+      --text: #1a1a18;
+      --text2: #4a4843;
+      --muted: #8a8780;
+      --muted2: #adaaa3;
+      --cream: #1a1a18;
+      --black: #ffffff;
+    }
+
+    body.light-mode nav {
+      background: rgba(245, 244, 240, 0.95);
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -152,6 +171,31 @@
       }
     }
 
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .theme-toggle {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 1rem;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .theme-toggle:hover {
+      border-color: var(--accent);
+    }
+
     .nav-wallet-area {
       display: flex;
       align-items: center;
@@ -199,7 +243,7 @@
 
     .disconnect-btn {
       background: transparent;
-      border: 1px solid rgba(255,100,100,0.3);
+      border: 1px solid rgba(255, 100, 100, 0.3);
       color: #ff6b6b;
       font-family: var(--font);
       font-size: 0.75rem;
@@ -211,8 +255,8 @@
     }
 
     .disconnect-btn:hover {
-      background: rgba(255,100,100,0.08);
-      border-color: rgba(255,100,100,0.6);
+      background: rgba(255, 100, 100, 0.08);
+      border-color: rgba(255, 100, 100, 0.6);
     }
 
     .hero {
@@ -320,18 +364,6 @@
       grid-template-columns: 1.1fr 0.9fr;
       gap: 18px;
       align-items: start;
-    }
-
-    @media(max-width:720px) {
-      .cols {
-        grid-template-columns: 1fr;
-      }
-      nav {
-        padding: 0 18px;
-      }
-      .nav-mid {
-        display: none;
-      }
     }
 
     .card {
@@ -849,11 +881,11 @@
     }
 
     .tx-amt.out {
-      color: #ff6b6b; /* Red for sent amounts */
+      color: #ff6b6b;
     }
 
     .tx-amt.in {
-      color: var(--mint); /* Green for received amounts */
+      color: var(--mint);
     }
 
     .tx-time {
@@ -1321,6 +1353,103 @@
         transform: rotate(360deg);
       }
     }
+
+    /* Mobile Optimization */
+    @media(max-width: 768px) {
+      .cols {
+        grid-template-columns: 1fr;
+      }
+
+      nav {
+        padding: 0 16px;
+      }
+
+      .nav-mid {
+        display: none;
+      }
+
+      .nav-wallet-area {
+        gap: 6px;
+      }
+
+      .logo-wordmark,
+      .app-label,
+      .nav-sep {
+        display: none;
+      }
+
+      .hero h1 {
+        font-size: clamp(2.2rem, 8vw, 2.8rem);
+      }
+
+      .hero {
+        padding: 40px 16px 20px;
+      }
+
+      .stats-bar {
+        flex-wrap: wrap;
+        margin: 20px 16px 40px;
+      }
+
+      .s-item {
+        flex: 1 1 45%;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .s-item:nth-child(even) {
+        border-left: 1px solid var(--border);
+      }
+
+      .s-item:nth-child(3),
+      .s-item:nth-child(4) {
+        border-bottom: none;
+      }
+
+      .wrap {
+        padding: 0 16px 60px;
+      }
+
+      .wallet-picker {
+        right: 16px;
+        left: 16px;
+        width: auto;
+        min-width: 0;
+      }
+
+      .connect-btn,
+      .disconnect-btn,
+      .theme-toggle,
+      .mini-connect,
+      .send-btn,
+      .modal-close {
+        min-height: 44px;
+      }
+
+      input,
+      select {
+        min-height: 44px;
+      }
+
+      .modal {
+        padding: 30px 20px;
+        width: 90%;
+      }
+
+      .processing-box {
+        width: 90%;
+      }
+
+      .connect-btn {
+        padding: 8px 12px;
+        font-size: 0.75rem;
+      }
+
+      .disconnect-btn {
+        padding: 8px 10px;
+        font-size: 0.7rem;
+      }
+    }
   </style>
 </head>
 
@@ -1340,7 +1469,7 @@
   <nav>
     <div class="logo-wrap">
       <svg width="30" height="30" viewBox="0 0 180 180" fill="none">
-        <use href="#rialo-mark" fill="#E8E3D5" />
+        <use href="#rialo-mark" fill="var(--cream)" />
       </svg>
       <div class="logo-wordmark">Rialo</div>
       <div class="nav-sep"></div>
@@ -1350,14 +1479,17 @@
       <span class="pill pill-net">TESTNET</span>
       <span class="pill pill-live"><span class="live-dot"></span>LIVE</span>
     </div>
-    <div class="nav-wallet-area" id="navWalletArea">
-      <button class="connect-btn" id="connectBtn" onclick="togglePicker()">
-        <div class="connect-dot" id="connectDot"></div>
-        <span id="connectLabel">Connect Wallet</span>
-      </button>
-      <button class="disconnect-btn" id="disconnectBtn" onclick="disconnectWallet()" style="display:none;">
-        Disconnect
-      </button>
+    <div class="nav-right">
+      <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙</button>
+      <div class="nav-wallet-area" id="navWalletArea">
+        <button class="connect-btn" id="connectBtn" onclick="togglePicker()">
+          <div class="connect-dot" id="connectDot"></div>
+          <span id="connectLabel">Connect Wallet</span>
+        </button>
+        <button class="disconnect-btn" id="disconnectBtn" onclick="disconnectWallet()" style="display:none;">
+          Disconnect
+        </button>
+      </div>
     </div>
 
     <!-- WALLET PICKER -->
@@ -1533,7 +1665,7 @@
   <div class="footer">
     <div class="footer-logo">
       <svg width="20" height="20" viewBox="0 0 180 180" fill="none">
-        <use href="#rialo-mark" fill="white" />
+        <use href="#rialo-mark" fill="var(--cream)" />
       </svg>
       <div class="footer-logo-word">Rialo Network</div>
     </div>
@@ -1632,7 +1764,18 @@
     let walletConnected = false;
     let balances = { USDC: 1000.00, USDT: 0, ETH: 0, RIALO: 0 };
 
+    function toggleTheme() {
+      const isLight = document.body.classList.toggle('light-mode');
+      localStorage.setItem('theme', isLight ? 'light' : 'dark');
+      document.getElementById('themeToggle').textContent = isLight ? '☀️' : '🌙';
+    }
+
     window.addEventListener('load', () => {
+      if (localStorage.getItem('theme') === 'light') {
+        document.body.classList.add('light-mode');
+        document.getElementById('themeToggle').textContent = '☀️';
+      }
+
       document.getElementById('walletNotice').style.display = 'block';
       document.addEventListener('click', (e) => {
         const picker = document.getElementById('walletPicker');
@@ -1677,7 +1820,7 @@
         // Fetch real balance from /api/balance
         const balRes = await fetch(`/api/balance?wallet=${walletAddress}`);
         const balData = await balRes.json();
-        
+
         if (balData.balance !== undefined) {
           balances.USDC = balData.balance;
           balances.USDT = 0;
@@ -1696,7 +1839,7 @@
         document.getElementById('balOn').style.display = 'block';
         document.getElementById('balOff').style.display = 'none';
         document.getElementById('disconnectBtn').style.display = 'block';
-        
+
         updateBalanceDisplay();
         loadUserTxs(walletAddress);
 
@@ -1753,6 +1896,20 @@
       const originalText = btn.innerHTML;
       btn.innerHTML = 'Checking...';
       btn.disabled = true;
+
+      try {
+        const message = `RialoPay Transaction\n\nSending: ${amount} ${currency}\nTo: ${recipient}\nNote: ${note}\nNetwork: Rialo Testnet\n\nSign to authorize this payment.`;
+        await window.ethereum.request({
+          method: 'personal_sign',
+          params: [message, window._walletAddress]
+        });
+      } catch (err) {
+        console.error(err);
+        alert("Transaction cancelled — signature rejected.");
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        return;
+      }
 
       try {
         // Ping API to deduct balance and save to Supabase before animation
@@ -1845,9 +2002,9 @@
         for (let i = 0; i < 64; i++) displayHash += hex[Math.floor(Math.random() * 16)];
       } else {
         // Make UUID look slightly more like a block hash
-        displayHash = '0x' + displayHash.replace(/-/g, '') + '00000000000000000000000000000000'; 
+        displayHash = '0x' + displayHash.replace(/-/g, '') + '00000000000000000000000000000000';
       }
-      
+
       document.getElementById('hashVal').textContent = displayHash;
       document.getElementById('overlay').classList.add('show');
 
@@ -1882,7 +2039,7 @@
             const isSent = tx.sender.toLowerCase() === walletAddress.toLowerCase();
             const shortAddr = isSent ? tx.receiver : tx.sender;
             const displayAddr = shortAddr.length > 10 ? shortAddr.slice(0, 6) + '...' + shortAddr.slice(-4) : shortAddr;
-            
+
             const el = document.createElement('div');
             el.className = 'tx';
             el.innerHTML = `
