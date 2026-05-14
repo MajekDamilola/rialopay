@@ -49,6 +49,17 @@ export default async function handler(req, res) {
     const { wallet } = req.query;
     if (!wallet) return res.status(400).json({ error: 'Wallet required' });
 
+    // Global feed — return latest 20 transactions from everyone
+    if (wallet === 'global') {
+      const { data: txs } = await supabase
+        .from('transactions')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+      return res.status(200).json({ transactions: txs || [] });
+    }
+
+    // Per user transactions
     const { data: txs } = await supabase
       .from('transactions')
       .select('*')
