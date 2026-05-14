@@ -143,12 +143,10 @@
     }
 
     @keyframes pulse {
-
       0%,
       100% {
         opacity: 1;
       }
-
       50% {
         opacity: 0.3;
       }
@@ -304,11 +302,9 @@
       .cols {
         grid-template-columns: 1fr;
       }
-
       nav {
         padding: 0 18px;
       }
-
       .nav-mid {
         display: none;
       }
@@ -734,7 +730,6 @@
         opacity: 0;
         transform: translateY(-8px);
       }
-
       to {
         opacity: 1;
         transform: translateY(0);
@@ -830,11 +825,11 @@
     }
 
     .tx-amt.out {
-      color: var(--text2);
+      color: #ff6b6b; /* Red for sent amounts */
     }
 
     .tx-amt.in {
-      color: var(--mint);
+      color: var(--mint); /* Green for received amounts */
     }
 
     .tx-time {
@@ -886,7 +881,6 @@
         transform: scale(0.8) translateY(16px);
         opacity: 0;
       }
-
       to {
         transform: scale(1) translateY(0);
         opacity: 1;
@@ -1067,7 +1061,6 @@
         opacity: 0;
         transform: translateY(-8px);
       }
-
       to {
         opacity: 1;
         transform: translateY(0);
@@ -1501,42 +1494,19 @@
             <div class="live-ind"><span class="live-dot"></span>GLOBAL FEED</div>
           </div>
           <div id="txFeed">
-            <div class="tx">
-              <div class="tx-ico out">↑</div>
-              <div class="tx-body">
-                <div class="tx-name">Sarah K. · Design Work</div>
-                <div class="tx-meta"><span class="tx-addr">0x8f3b...12ac</span><span
-                    class="tx-badge b-priv">PRIVATE</span><span class="tx-badge b-inst">INSTANT</span></div>
-              </div>
-              <div class="tx-right">
-                <div class="tx-amt out">−$850.00</div>
-                <div class="tx-time">2 mins ago</div>
-              </div>
+            <!-- Global feed loaded via JS -->
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:18px; display:none;" id="userTxCard">
+          <div class="card-shine"></div>
+          <div class="feed-header">
+            <div class="sec-lbl" style="margin-bottom:0;">
+              <div class="sec-dot"></div>YOUR TRANSACTIONS
             </div>
-            <div class="tx">
-              <div class="tx-ico in">↓</div>
-              <div class="tx-body">
-                <div class="tx-name">Client Payment · March</div>
-                <div class="tx-meta"><span class="tx-addr">0x2d9c...88fa</span><span
-                    class="tx-badge b-priv">PRIVATE</span><span class="tx-badge b-inst">INSTANT</span></div>
-              </div>
-              <div class="tx-right">
-                <div class="tx-amt in">+$3,200.00</div>
-                <div class="tx-time">1 hr ago</div>
-              </div>
-            </div>
-            <div class="tx">
-              <div class="tx-ico out">↑</div>
-              <div class="tx-body">
-                <div class="tx-name">Dev Invoice #12</div>
-                <div class="tx-meta"><span class="tx-addr">0x7a1f...34de</span><span
-                    class="tx-badge b-priv">PRIVATE</span></div>
-              </div>
-              <div class="tx-right">
-                <div class="tx-amt out">−$1,500.00</div>
-                <div class="tx-time">Yesterday</div>
-              </div>
-            </div>
+          </div>
+          <div id="userTxFeed">
+            <!-- User specific history loaded via JS -->
           </div>
         </div>
       </div>
@@ -1648,7 +1618,7 @@
 
     window.addEventListener('load', () => {
       document.getElementById('walletNotice').style.display = 'block';
-      loadSharedTxs();
+      loadGlobalFeed();
       document.addEventListener('click', (e) => {
         const picker = document.getElementById('walletPicker');
         const btn = document.getElementById('connectBtn');
@@ -1676,19 +1646,26 @@
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         const walletAddress = accounts[0];
 
+        // Hit /api/wallet to ensure user exists
         const response = await fetch('/api/wallet', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ wallet_address: walletAddress })
         });
-        const data = await response.json();
+        await response.json();
 
-        if (data.user) {
-          balances.USDC = data.user.balance;
+        // Fetch real balance from /api/balance
+        const balRes = await fetch(`/api/balance?wallet=${walletAddress}`);
+        const balData = await balRes.json();
+        
+        if (balData.balance !== undefined) {
+          balances.USDC = balData.balance;
           balances.USDT = 0;
         }
 
         walletConnected = true;
+        window._walletAddress = walletAddress;
+
         const dot = document.getElementById('connectDot');
         const lbl = document.getElementById('connectLabel');
         const btn = document.getElementById('connectBtn');
@@ -1698,7 +1675,9 @@
         document.getElementById('walletNotice').style.display = 'none';
         document.getElementById('balOn').style.display = 'block';
         document.getElementById('balOff').style.display = 'none';
+        
         updateBalanceDisplay();
+        loadUserTxs(walletAddress);
 
       } catch (err) {
         console.error('MetaMask error:', err);
@@ -1708,6 +1687,7 @@
 
     function disconnectWallet() {
       walletConnected = false;
+      window._walletAddress = null;
       balances = { USDC: 1000.00, USDT: 0, ETH: 0, RIALO: 0 };
       const dot = document.getElementById('connectDot');
       const lbl = document.getElementById('connectLabel');
@@ -1718,6 +1698,7 @@
       document.getElementById('walletNotice').style.display = 'block';
       document.getElementById('balOn').style.display = 'none';
       document.getElementById('balOff').style.display = 'block';
+      document.getElementById('userTxCard').style.display = 'none';
     }
 
     function updateBalanceDisplay() {
@@ -1729,23 +1710,6 @@
       document.getElementById('usdtUsd').textContent = '≈ $' + balances.USDT.toFixed(2);
     }
 
-    function deductBalance(amount, currency) {
-      if (currency === 'USDC' && balances.USDC >= amount) {
-        balances.USDC -= amount;
-      } else if (currency === 'USDT' && balances.USDT >= amount) {
-        balances.USDT -= amount;
-      } else {
-        if (balances.USDC >= amount) { balances.USDC -= amount; }
-        else if (balances.USDT >= amount) { balances.USDT -= amount; }
-        else {
-          const remaining = amount - balances.USDC;
-          balances.USDC = 0;
-          balances.USDT = Math.max(0, balances.USDT - remaining);
-        }
-      }
-      updateBalanceDisplay();
-    }
-
     document.getElementById('amount').addEventListener('input', function () {
       const amt = parseFloat(this.value);
       const cur = document.getElementById('currency').value;
@@ -1755,15 +1719,54 @@
       else row.style.display = 'none';
     });
 
-    function sendPayment() {
+    async function sendPayment() {
       if (!walletConnected) { alert('Please connect your wallet first.'); return; }
       const recipient = document.getElementById('recipient').value.trim();
       const amount = parseFloat(document.getElementById('amount').value);
       const currency = document.getElementById('currency').value;
       const note = document.getElementById('note').value.trim() || 'Payment';
       if (!recipient || !amount || amount <= 0) { alert('Please fill in recipient and amount.'); return; }
-      window._pendingTx = { recipient, amount, currency, note };
-      runProcessing();
+
+      const btn = document.querySelector('.send-btn');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = 'Checking...';
+      btn.disabled = true;
+
+      try {
+        // Ping API to deduct balance and save to Supabase before animation
+        const res = await fetch('/api/transaction', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sender: window._walletAddress,
+            receiver: recipient,
+            amount: amount,
+            note: note,
+            currency: currency
+          })
+        });
+
+        const data = await res.json();
+
+        // Show Insufficient Balance or other error returned by backend
+        if (!res.ok) {
+          alert(data.error || 'Transaction failed');
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+          return;
+        }
+
+        // Transaction successful on backend - Start UI Animation
+        window._pendingTx = { recipient, amount, currency, note, hash: data.transaction ? data.transaction.id : null };
+        runProcessing();
+
+      } catch (err) {
+        console.error(err);
+        alert('An error occurred while processing the transaction.');
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
     }
 
     function runProcessing() {
@@ -1807,88 +1810,117 @@
       setTimeout(runStep, 300);
     }
 
-    function finalizeTx() {
-      const { recipient, amount, currency, note } = window._pendingTx;
+    async function finalizeTx() {
+      const { hash } = window._pendingTx;
       document.getElementById('step4').classList.remove('active');
       document.getElementById('step4').classList.add('done');
       document.getElementById('step4-status').textContent = '✓';
 
-      const hex = '0123456789abcdef';
-      let hash = '0x';
-      for (let i = 0; i < 64; i++) hash += hex[Math.floor(Math.random() * 16)];
-      document.getElementById('hashVal').textContent = hash;
+      let displayHash = hash;
+      if (!displayHash) {
+        const hex = '0123456789abcdef';
+        displayHash = '0x';
+        for (let i = 0; i < 64; i++) displayHash += hex[Math.floor(Math.random() * 16)];
+      } else {
+        // Make UUID look slightly more like a block hash
+        displayHash = '0x' + displayHash.replace(/-/g, '') + '00000000000000000000000000000000'; 
+      }
+      
+      document.getElementById('hashVal').textContent = displayHash;
       document.getElementById('overlay').classList.add('show');
-
-      deductBalance(amount, currency);
-
-      const shortAddr = recipient.length > 10 ? recipient.slice(0, 6) + '...' + recipient.slice(-4) : recipient;
-      prependTx(shortAddr, amount, note, true);
-      saveSharedTx(shortAddr, amount, currency, note);
 
       document.getElementById('recipient').value = '';
       document.getElementById('amount').value = '';
       document.getElementById('note').value = '';
       document.getElementById('total-row').style.display = 'none';
-    }
 
-    function prependTx(addr, amount, note, isNew) {
-      const feed = document.getElementById('txFeed');
-      const el = document.createElement('div');
-      el.className = 'tx';
-      el.innerHTML = `
-      <div class="tx-ico out">↑</div>
-      <div class="tx-body">
-        <div class="tx-name">${note}</div>
-        <div class="tx-meta">
-          <span class="tx-addr">${addr}</span>
-          <span class="tx-badge b-priv">PRIVATE</span>
-          <span class="tx-badge b-inst">INSTANT</span>
-          ${isNew ? '<span class="tx-badge b-new">NEW</span>' : ''}
-        </div>
-      </div>
-      <div class="tx-right">
-        <div class="tx-amt out">−$${parseFloat(amount).toFixed(2)}</div>
-        <div class="tx-time">Just now</div>
-      </div>`;
-      feed.prepend(el);
-    }
-
-    const SK = 'rialopay-global-txs-v2';
-
-    async function saveSharedTx(addr, amount, currency, note) {
+      // Re-fetch correct remaining balance
       try {
-        let txs = [];
-        try { const r = await window.storage.get(SK, true); if (r) txs = JSON.parse(r.value); } catch (e) { }
-        txs.unshift({ addr, amount, currency, note, time: Date.now() });
-        await window.storage.set(SK, JSON.stringify(txs.slice(0, 30)), true);
-      } catch (e) { }
+        const balRes = await fetch(`/api/balance?wallet=${window._walletAddress}`);
+        const balData = await balRes.json();
+        if (balData.balance !== undefined) {
+          balances.USDC = balData.balance;
+          updateBalanceDisplay();
+        }
+      } catch (e) { console.error(e); }
+
+      // Refresh both feeds seamlessly
+      loadGlobalFeed();
+      loadUserTxs(window._walletAddress);
     }
 
-    async function loadSharedTxs() {
+    async function loadGlobalFeed() {
       try {
-        const r = await window.storage.get(SK, true);
-        if (!r) return;
-        JSON.parse(r.value).forEach(tx => {
-          const el = document.createElement('div');
-          el.className = 'tx';
-          el.innerHTML = `
-          <div class="tx-ico out">↑</div>
-          <div class="tx-body">
-            <div class="tx-name">${tx.note || 'Payment'}</div>
-            <div class="tx-meta"><span class="tx-addr">${tx.addr}</span><span class="tx-badge b-priv">PRIVATE</span><span class="tx-badge b-inst">INSTANT</span></div>
-          </div>
-          <div class="tx-right">
-            <div class="tx-amt out">−$${parseFloat(tx.amount).toFixed(2)}</div>
-            <div class="tx-time">${timeAgo(tx.time)}</div>
-          </div>`;
-          document.getElementById('txFeed').prepend(el);
-        });
-      } catch (e) { }
+        const res = await fetch('/api/transaction?wallet=global');
+        const data = await res.json();
+        const feed = document.getElementById('txFeed');
+        feed.innerHTML = '';
+        if (data.transactions && data.transactions.length > 0) {
+          data.transactions.forEach(tx => {
+            const shortSender = tx.sender.length > 10 ? tx.sender.slice(0, 6) + '...' + tx.sender.slice(-4) : tx.sender;
+            const el = document.createElement('div');
+            el.className = 'tx';
+            el.innerHTML = `
+              <div class="tx-ico out">↑</div>
+              <div class="tx-body">
+                <div class="tx-name">${tx.note || 'Payment'}</div>
+                <div class="tx-meta"><span class="tx-addr">${shortSender}</span><span class="tx-badge b-priv">PRIVATE</span><span class="tx-badge b-inst">INSTANT</span></div>
+              </div>
+              <div class="tx-right">
+                <div class="tx-amt out">$${parseFloat(tx.amount).toFixed(2)}</div>
+                <div class="tx-time">${timeAgo(Date.parse(tx.created_at))}</div>
+              </div>`;
+            feed.appendChild(el);
+          });
+        } else {
+          feed.innerHTML = '<p style="color: var(--muted); font-size: 0.85rem; padding: 10px 0;">No transactions yet.</p>';
+        }
+      } catch (e) {
+        console.error("Error loading global feed", e);
+      }
+    }
+
+    async function loadUserTxs(walletAddress) {
+      if (!walletAddress) return;
+      try {
+        const res = await fetch(`/api/transaction?wallet=${walletAddress}`);
+        const data = await res.json();
+        const feed = document.getElementById('userTxFeed');
+        feed.innerHTML = '';
+        if (data.transactions && data.transactions.length > 0) {
+          data.transactions.forEach(tx => {
+            const isSent = tx.sender.toLowerCase() === walletAddress.toLowerCase();
+            const shortAddr = isSent ? tx.receiver : tx.sender;
+            const displayAddr = shortAddr.length > 10 ? shortAddr.slice(0, 6) + '...' + shortAddr.slice(-4) : shortAddr;
+            
+            const el = document.createElement('div');
+            el.className = 'tx';
+            el.innerHTML = `
+              <div class="tx-ico ${isSent ? 'out' : 'in'}">${isSent ? '↑' : '↓'}</div>
+              <div class="tx-body">
+                <div class="tx-name">${tx.note || 'Payment'}</div>
+                <div class="tx-meta"><span class="tx-addr">${displayAddr}</span><span class="tx-badge b-priv">PRIVATE</span><span class="tx-badge b-inst">INSTANT</span></div>
+              </div>
+              <div class="tx-right">
+                <div class="tx-amt ${isSent ? 'out' : 'in'}">${isSent ? '−' : '+'}$${parseFloat(tx.amount).toFixed(2)}</div>
+                <div class="tx-time">${timeAgo(Date.parse(tx.created_at))}</div>
+              </div>`;
+            feed.appendChild(el);
+          });
+          document.getElementById('userTxCard').style.display = 'block';
+        } else {
+          feed.innerHTML = '<p style="color: var(--muted); font-size: 0.85rem; padding: 10px 0;">No transactions yet.</p>';
+          document.getElementById('userTxCard').style.display = 'block';
+        }
+      } catch (e) {
+        console.error("Error loading user txs", e);
+      }
     }
 
     function timeAgo(ts) {
+      if (!ts) return '';
       const d = Math.floor((Date.now() - ts) / 1000);
-      if (d < 60) return `${d}s ago`;
+      if (d < 60) return `${Math.max(d, 0)}s ago`;
       if (d < 3600) return `${Math.floor(d / 60)}m ago`;
       if (d < 86400) return `${Math.floor(d / 3600)}h ago`;
       return `${Math.floor(d / 86400)}d ago`;

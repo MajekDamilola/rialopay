@@ -37,7 +37,7 @@ export default async function handler(req, res) {
     // Save transaction
     const { data: tx, error } = await supabase
       .from('transactions')
-      .insert([{ sender, receiver, amount, note, status: 'confirmed' }])
+      .insert([{ sender, receiver, amount, note, currency, status: 'confirmed' }])
       .select()
       .single();
 
