@@ -8,6 +8,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap"
     rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     :root {
       /* Base Colors - Cinematic Dark */
@@ -466,6 +467,15 @@
       input, select { min-height: 48px; font-size: 1rem; }
       .amt-wrap input { min-height: 72px; }
     }
+
+    /* NEW RECEIVE CARD STYLES */
+    .qr-wrap { background: #fff; padding: 12px; border-radius: 16px; display: inline-block; margin: 0 auto 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .receive-addr-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 20px; text-align: center; font-family: var(--mono); position: relative; box-shadow: var(--inner-border); }
+    .receive-addr-full { font-size: 0.75rem; color: var(--cream); word-break: break-all; margin-bottom: 8px; }
+    .receive-actions { display: flex; gap: 12px; justify-content: center; }
+    .action-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-family: var(--font); font-size: 0.8rem; font-weight: 600; padding: 10px 16px; border-radius: 10px; cursor: pointer; transition: all 0.3s var(--ease-out); box-shadow: var(--shadow-sm), var(--inner-border); flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .action-btn:hover { background: var(--surface-hover); border-color: var(--border-light); transform: translateY(-1px); box-shadow: var(--shadow-md), var(--inner-border); }
+    
   </style>
 </head>
 
@@ -657,6 +667,23 @@
           <div class="not-connected" id="balOff">
             <p style="font-size:2.5rem;margin-bottom:16px;">💳</p>
             <p>Connect your wallet to see your balance</p>
+          </div>
+        </div>
+
+        <div class="card" id="receiveCard" style="display:none; margin-bottom:32px; text-align: center;">
+          <div class="card-shine"></div>
+          <div class="sec-lbl" style="justify-content: flex-start;">
+            <div class="sec-dot"></div>RECEIVE PAYMENT
+          </div>
+          <div class="qr-wrap">
+            <div id="qrCode"></div>
+          </div>
+          <div class="receive-addr-box">
+            <div class="receive-addr-full" id="receiveAddress">0x...</div>
+          </div>
+          <div class="receive-actions">
+            <button class="action-btn" id="copyBtn" onclick="copyAddress()">Copy Address</button>
+            <button class="action-btn" id="shareBtn" onclick="shareAddress()" style="display:none;">Share</button>
           </div>
         </div>
 
@@ -854,6 +881,7 @@
 
         updateBalanceDisplay();
         loadUserTxs(walletAddress);
+        showReceiveCard(walletAddress);
 
       } catch (err) {
         console.error('MetaMask error:', err);
@@ -876,6 +904,7 @@
       document.getElementById('balOff').style.display = 'block';
       document.getElementById('disconnectBtn').style.display = 'none';
       document.getElementById('txFeed').innerHTML = '';
+      document.getElementById('receiveCard').style.display = 'none';
     }
 
     function updateBalanceDisplay() {
@@ -1084,6 +1113,51 @@
     }
 
     function closeModal() { document.getElementById('overlay').classList.remove('show'); }
+
+    function showReceiveCard(address) {
+      const card = document.getElementById('receiveCard');
+      card.style.display = 'block';
+      
+      document.getElementById('receiveAddress').textContent = address;
+      
+      document.getElementById('qrCode').innerHTML = '';
+      new QRCode(document.getElementById('qrCode'), {
+        text: address,
+        width: 160,
+        height: 160,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.H
+      });
+
+      if (navigator.share) {
+        document.getElementById('shareBtn').style.display = 'flex';
+      }
+    }
+
+    function copyAddress() {
+      navigator.clipboard.writeText(window._walletAddress).then(() => {
+        const btn = document.getElementById('copyBtn');
+        btn.textContent = 'Copied!';
+        btn.style.borderColor = 'rgba(var(--mint-rgb), 0.6)';
+        btn.style.color = 'var(--mint)';
+        setTimeout(() => {
+          btn.textContent = 'Copy Address';
+          btn.style.borderColor = '';
+          btn.style.color = '';
+        }, 2000);
+      });
+    }
+
+    function shareAddress() {
+      if (navigator.share) {
+        navigator.share({
+          title: 'Pay me on RialoPay',
+          text: `Send payment to my RialoPay wallet: ${window._walletAddress}`,
+          url: 'https://rialopay.vercel.app'
+        });
+      }
+    }
   </script>
 </body>
 
